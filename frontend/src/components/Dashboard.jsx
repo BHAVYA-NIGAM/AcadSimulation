@@ -14,23 +14,23 @@ function SummaryCard({ label, value, tone }) {
 
   return (
     <div
-      className={`rounded-[26px] border bg-gradient-to-br p-5 ${toneClasses[tone] || toneClasses.orange}`}
+      className={`theme-summary-card rounded-[26px] border bg-gradient-to-br p-5 ${toneClasses[tone] || toneClasses.orange}`}
     >
-      <p className="text-sm uppercase tracking-[0.2em] text-slate-400">
+      <p className="theme-summary-label text-sm uppercase tracking-[0.2em]">
         {label}
       </p>
-      <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
+      <p className="mt-3 text-3xl font-semibold">{value}</p>
     </div>
   );
 }
 
 function EmptyState({ message }) {
   return (
-    <section className="rounded-[30px] border border-white/10 bg-slate-950/55 p-10 text-center shadow-soft">
-      <h2 className="text-2xl font-semibold text-white">
+    <section className="theme-panel-muted rounded-[30px] border p-10 text-center shadow-soft">
+      <h2 className="theme-heading text-2xl font-semibold">
         No dashboard data yet
       </h2>
-      <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-400">
+      <p className="theme-muted mx-auto mt-3 max-w-2xl text-sm leading-7">
         {message}
       </p>
     </section>
@@ -39,21 +39,21 @@ function EmptyState({ message }) {
 
 function LoadingState({ message }) {
   return (
-    <section className="rounded-[30px] border border-white/10 bg-slate-950/55 p-10 text-center shadow-soft">
+    <section className="theme-panel-muted rounded-[30px] border p-10 text-center shadow-soft">
       <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-orange-300/30 border-t-orange-300" />
-      <p className="mt-4 text-sm text-slate-300">{message}</p>
+      <p className="theme-text mt-4 text-sm">{message}</p>
     </section>
   );
 }
 
 function InsightCard({ label, value, helper }) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
-      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+    <div className="theme-panel-muted rounded-[24px] border p-4">
+      <p className="theme-muted text-xs uppercase tracking-[0.2em]">
         {label}
       </p>
-      <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
-      <p className="mt-2 text-sm text-slate-400">{helper}</p>
+      <p className="theme-heading mt-2 text-2xl font-semibold">{value}</p>
+      <p className="theme-muted mt-2 text-sm">{helper}</p>
     </div>
   );
 }
@@ -83,35 +83,35 @@ function MetricMeta({ metrics }) {
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">
-      <div className="rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+      <div className="theme-panel-muted rounded-[24px] border p-4">
+        <p className="theme-muted text-xs uppercase tracking-[0.2em]">
           Current Date Time
         </p>
-        <p className="mt-2 text-lg font-semibold text-white">
+        <p className="theme-heading mt-2 text-lg font-semibold">
           {currentTime.toLocaleString()}
         </p>
       </div>
-      <div className="rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+      <div className="theme-panel-muted rounded-[24px] border p-4">
+        <p className="theme-muted text-xs uppercase tracking-[0.2em]">
           {isPredicted ? "Prediction Target" : "Dataset Date"}
         </p>
-        <p className="mt-2 text-lg font-semibold text-white">
+        <p className="theme-heading mt-2 text-lg font-semibold">
           {displayDateLabel}
         </p>
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="theme-muted mt-2 text-sm">
           {isPredicted
             ? `${meta.targetWeekday} • based on ${meta.basedOnRecordCount} record(s)`
             : `${meta.weekday || ""} • uploaded ${uploadedLabel}`}
         </p>
       </div>
-      <div className="rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+      <div className="theme-panel-muted rounded-[24px] border p-4">
+        <p className="theme-muted text-xs uppercase tracking-[0.2em]">
           Mode
         </p>
-        <p className="mt-2 text-lg font-semibold text-white">
+        <p className="theme-heading mt-2 text-lg font-semibold">
           {isPredicted ? "Predicted Dashboard" : "Recorded Dashboard"}
         </p>
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="theme-muted mt-2 text-sm">
           {isPredicted
             ? meta.predictionStrategy === "same-weekday-history"
               ? "Matched previous records from the same weekday as the requested date."
@@ -136,12 +136,12 @@ function DataControlPanel({ history, onSelectRecord }) {
 
   return (
     <div className="grid gap-6">
-      <article className="rounded-[30px] border border-white/10 bg-slate-950/60 p-5 shadow-soft">
+      <article className="theme-panel-muted rounded-[30px] border p-5 shadow-soft">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-white">
+          <h3 className="theme-heading text-lg font-semibold">
             Historical Records
           </h3>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="theme-muted mt-1 text-sm">
             Select a dated record from newest to oldest to quickly switch the
             dashboard view from uploaded workbooks stored in backend data.
           </p>
@@ -150,7 +150,7 @@ function DataControlPanel({ history, onSelectRecord }) {
           <div>
             <label
               htmlFor="history-record-select"
-              className="text-sm text-slate-300"
+              className="theme-text text-sm"
             >
               Historical record
             </label>
@@ -158,37 +158,37 @@ function DataControlPanel({ history, onSelectRecord }) {
               id="history-record-select"
               value={selectedRecordId}
               onChange={handleChange}
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-orange-300"
+              className="theme-input mt-2 w-full rounded-2xl border px-4 py-3 outline-none transition focus:border-orange-300"
             >
               <option value="">Choose a record</option>
               {history.map((record) => (
                 <option key={record.id} value={record.id}>
-                  {`${new Date(`${record.dataDate}T00:00:00`).toLocaleDateString()} - ${record.originalName}`}
+                  {`${new Date(`${record.dataDate}T00:00:00`).toLocaleDateString()} `}
                 </option>
               ))}
             </select>
           </div>
 
           {history?.length ? (
-            <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+            <div className="theme-surface rounded-[24px] border p-4">
+              <p className="theme-muted text-xs uppercase tracking-[0.2em]">
                 Latest Available
               </p>
-              <p className="mt-2 text-base font-semibold text-white">
+              {/* <p className="theme-heading mt-2 text-base font-semibold">
                 {history[0].originalName}
-              </p>
-              <p className="mt-1 text-sm text-slate-300">
+              </p> */}
+              <p className="theme-text mt-1 text-sm">
                 {new Date(
                   `${history[0].dataDate}T00:00:00`,
                 ).toLocaleDateString()}{" "}
                 • {history[0].weekday}
               </p>
-              <p className="mt-3 text-sm text-slate-400">
+              <p className="theme-muted mt-3 text-sm">
                 Uploaded workbook
               </p>
             </div>
           ) : (
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-slate-400 lg:col-span-2">
+            <div className="theme-surface rounded-2xl border px-4 py-5 text-sm theme-muted lg:col-span-2">
               Historical records will appear here as uploaded dated workbooks.
             </div>
           )}
@@ -228,6 +228,7 @@ function roomDisplayName(room) {
 }
 
 export default function Dashboard({
+  theme,
   metrics,
   isLoading,
   isRefreshing,
@@ -265,24 +266,24 @@ export default function Dashboard({
     <section className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-white">
+          <h2 className="theme-heading text-2xl font-semibold">
             Simulation Dashboard
           </h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="theme-muted mt-1 text-sm">
             A live view of room load, utilization, and crowding pressure across
             the academic block.
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-3">
           {isRefreshing ? (
-            <div className="rounded-full border border-orange-400/30 bg-orange-500/10 px-4 py-2 text-sm text-orange-200">
+            <div className="theme-button-orange cursor-default px-4 py-2">
               Refreshing with uploaded workbook...
             </div>
           ) : null}
           <button
             type="button"
             onClick={onReset}
-            className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-100 transition hover:bg-white/10"
+            className="theme-button-neutral"
           >
             Back To Upload
           </button>
@@ -290,7 +291,7 @@ export default function Dashboard({
       </div>
 
       {statusMessage ? (
-        <div className="rounded-[24px] border border-emerald-400/30 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-100">
+        <div className="theme-alert-success rounded-[24px] border px-5 py-4 text-sm">
           {statusMessage}
         </div>
       ) : null}
@@ -346,8 +347,8 @@ export default function Dashboard({
             onClick={() => setActiveView(view.id)}
             className={`rounded-full px-4 py-2 text-sm font-medium transition ${
               activeView === view.id
-                ? "border border-orange-400/30 bg-orange-500/15 text-orange-100"
-                : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                ? "theme-button-orange"
+                : "theme-button-neutral"
             }`}
           >
             {view.label}
@@ -358,21 +359,28 @@ export default function Dashboard({
       <DataControlPanel history={history} onSelectRecord={onSelectRecord} />
 
       {activeView === "overview" ? (
-        <Charts rooms={metrics.rooms} timeSeries={metrics.timeSeries} />
+        <Charts theme={theme} rooms={metrics.rooms} timeSeries={metrics.timeSeries} />
       ) : null}
 
       {activeView === "timetable" ? (
         <ClassScheduleTable
           classes={metrics.classes}
+          rooms={metrics.rooms}
           currentRecordId={metrics.meta?.recordId}
           currentDate={metrics.meta?.dataDate}
           history={history}
+          onApplyOptimization={onApplyOptimization}
           onSelectRecord={onSelectRecord}
         />
       ) : null}
 
       {activeView === "availability" ? (
-        <RoomAvailabilityPanel rooms={metrics.rooms} classes={metrics.classes} />
+        <RoomAvailabilityPanel
+          rooms={metrics.rooms}
+          classes={metrics.classes}
+          currentRecordId={metrics.meta?.recordId}
+          onApplyOptimization={onApplyOptimization}
+        />
       ) : null}
 
       {activeView === "optimize" ? (

@@ -9,6 +9,8 @@ import {
   uploadWorkbook
 } from "./services/api.js";
 
+const THEME_STORAGE_KEY = "acad-simulation-theme";
+
 function pageFromPath(pathname) {
   if (pathname === "/timetable-editor") {
     return "timetable-editor";
@@ -17,6 +19,9 @@ function pageFromPath(pathname) {
 }
 
 export default function App() {
+  const [theme, setTheme] = useState(() => {
+    return window.localStorage.getItem(THEME_STORAGE_KEY) || "dark";
+  });
   const [metrics, setMetrics] = useState(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -31,6 +36,11 @@ export default function App() {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
 
   useEffect(() => {
     function handlePopState() {
@@ -162,9 +172,32 @@ export default function App() {
     navigateTo("dashboard");
   }
 
+  function handleToggleTheme() {
+    setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
+  }
+
   return (
-    <main className="dashboard-shell min-h-screen px-4 py-6 text-slate-100 sm:px-6 lg:px-10">
+    <main className="dashboard-shell min-h-screen px-4 py-6 sm:px-6 lg:px-10">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        <header className="theme-topbar flex flex-wrap items-center justify-between gap-4 rounded-[28px] px-5 py-4 sm:px-6">
+          <div>
+            <p className="theme-kicker text-2xl uppercase  font-semibold tracking-[0.35em]">
+              Academic Block Simulation
+            </p>
+            {/* <h1 className="theme-heading mt-2 text-2xl font-semibold sm:text-3xl">
+              Dashboard workspace
+            </h1> */}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleToggleTheme}
+            className="theme-button-neutral"
+          >
+            Switch to {theme === "dark" ? "light" : "dark"} mode
+          </button>
+        </header>
+
         {currentPage === "upload" ? (
           <UploadLanding
             isLoading={isInitialLoading}
@@ -182,6 +215,7 @@ export default function App() {
 
         {currentPage === "dashboard" ? (
           <Dashboard
+            theme={theme}
             metrics={metrics}
             isLoading={isInitialLoading}
             isRefreshing={isUploading || isLoadingHistoryRecord}

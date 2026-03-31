@@ -90,37 +90,37 @@ export default function OptimizeTimetablePanel({
   }
 
   return (
-    <article className="rounded-[30px] border border-white/10 bg-slate-950/60 p-6 shadow-soft">
+    <article className="theme-panel-muted rounded-[30px] border p-6 shadow-soft">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold text-white">Optimize Timetable</h3>
-          <p className="mt-1 text-sm text-slate-400">
+          <h3 className="theme-heading text-lg font-semibold">Optimize Timetable</h3>
+          <p className="theme-muted mt-1 text-sm">
             Review suggested room shifts and apply them directly to create a new saved timetable record.
           </p>
         </div>
         <button
           type="button"
           onClick={onOpenEditor}
-          className="rounded-full border border-sky-400/30 bg-sky-500/10 px-4 py-2 text-sm text-sky-100 transition hover:bg-sky-500/20"
+          className="theme-button-sky"
         >
           Open Full Timetable Editor
         </button>
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+        <div className="theme-alert-error mt-4 rounded-2xl border px-4 py-3 text-sm">
           {error}
         </div>
       ) : null}
 
       {isLoading ? (
-        <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-slate-300">
+        <div className="theme-surface theme-text mt-5 rounded-2xl border px-4 py-5 text-sm">
           Loading optimization suggestions...
         </div>
       ) : null}
 
       {!isLoading && !optimizations.length ? (
-        <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-5 text-sm text-emerald-100">
+        <div className="theme-alert-success mt-5 rounded-2xl border px-4 py-5 text-sm">
           No optimization suggestions are available for the currently loaded timetable.
         </div>
       ) : null}
@@ -130,29 +130,29 @@ export default function OptimizeTimetablePanel({
           {optimizations.map((item) => (
             <section
               key={`${item.type}-${item.classId}-${item.toRoom}`}
-              className="rounded-[24px] border border-white/10 bg-white/5 p-5"
+              className="theme-surface rounded-[24px] border p-5"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-orange-300">
+                  <p className="theme-kicker text-xs uppercase tracking-[0.2em]">
                     {optimizationTitle(item)}
                   </p>
-                  <h4 className="mt-2 text-lg font-semibold text-white">
+                  <h4 className="theme-heading mt-2 text-lg font-semibold">
                     {item.classId}
                   </h4>
                 </div>
-                <span className="rounded-full border border-white/10 bg-slate-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white">
+                <span className="theme-badge rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]">
                   {item.type}
                 </span>
               </div>
 
-              <div className="mt-4 space-y-2 text-sm text-slate-300">
-                <p className="text-white">{item.time}</p>
+              <div className="theme-text mt-4 space-y-2 text-sm">
+                <p className="theme-heading">{item.time}</p>
                 <p>
-                  <span className="text-slate-400">From:</span> {item.fromRoom}
+                  <span className="theme-muted">From:</span> {item.fromRoom}
                 </p>
                 <p>
-                  <span className="text-slate-400">To:</span> {item.toRoom}
+                  <span className="theme-muted">To:</span> {item.toRoom}
                 </p>
                 <p>{item.benefit || "Suggested for better timetable efficiency."}</p>
               </div>
@@ -161,7 +161,7 @@ export default function OptimizeTimetablePanel({
                 type="button"
                 onClick={() => handleApply(item)}
                 disabled={activeClassId === item.classId}
-                className="mt-5 rounded-full border border-orange-400/30 bg-orange-500/10 px-4 py-2 text-sm text-orange-100 transition hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                className="theme-button-orange mt-5 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {activeClassId === item.classId ? "Applying..." : "Shift Class"}
               </button>

@@ -160,10 +160,10 @@ export default function TimetableEditorPage({
     <section className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-white">
+          <h2 className="theme-heading text-2xl font-semibold">
             Timetable Editor
           </h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="theme-muted mt-1 text-sm">
             Edit the day-wise timetable using the stored room and enrollment
             inventory, then save it as a dated historical record.
           </p>
@@ -172,14 +172,14 @@ export default function TimetableEditorPage({
           <button
             type="button"
             onClick={onBack}
-            className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-100 transition hover:bg-white/10"
+            className="theme-button-neutral"
           >
             Back
           </button>
           <button
             type="button"
             onClick={onOpenDashboard}
-            className="rounded-full border border-sky-400/30 bg-sky-500/10 px-4 py-2 text-sm text-sky-100 transition hover:bg-sky-500/20"
+            className="theme-button-sky"
           >
             Open Dashboard
           </button>
@@ -187,25 +187,25 @@ export default function TimetableEditorPage({
       </div>
 
       {error ? (
-        <div className="rounded-[24px] border border-rose-400/30 bg-rose-500/10 px-5 py-4 text-sm text-rose-100">
+        <div className="theme-alert-error rounded-[24px] border px-5 py-4 text-sm">
           {error}
         </div>
       ) : null}
 
       {isLoading ? (
-        <div className="rounded-[30px] border border-white/10 bg-slate-950/60 p-6 text-sm text-slate-300 shadow-soft">
+        <div className="theme-panel-muted theme-text rounded-[30px] border p-6 text-sm shadow-soft">
           Loading timetable template...
         </div>
       ) : null}
 
       {!isLoading && template ? (
         <>
-          <section className="rounded-[30px] border border-white/10 bg-slate-950/60 p-6 shadow-soft">
+          <section className="theme-panel-muted rounded-[30px] border p-6 shadow-soft">
             <div className="grid gap-4 md:grid-cols-[1fr_auto_auto] md:items-end">
               <div>
                 <label
                   htmlFor="timetable-date"
-                  className="text-sm text-slate-300"
+                  className="theme-text text-sm"
                 >
                   Save timetable for date
                 </label>
@@ -216,7 +216,7 @@ export default function TimetableEditorPage({
                     type="date"
                     value={selectedDate}
                     onChange={(event) => setSelectedDate(event.target.value)}
-                    className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-orange-300"
+                    className="theme-input w-full rounded-2xl border px-4 py-3 outline-none transition focus:border-orange-300"
                   />
                   <button
                     type="button"
@@ -229,14 +229,14 @@ export default function TimetableEditorPage({
                         dateInputRef.current?.focus();
                       }
                     }}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-100 transition hover:bg-white/10"
+                    className="theme-button-neutral rounded-2xl px-4 py-3"
                   >
                     Open Calendar
                   </button>
                 </div>
-                <p className="mt-2 text-sm text-slate-400">
+                <p className="theme-muted mt-2 text-sm">
                   Day will be saved as{" "}
-                  <span className="text-white">{selectedWeekday}</span>.
+                  <span className="theme-heading">{selectedWeekday}</span>.
                 </p>
               </div>
 
@@ -249,16 +249,16 @@ export default function TimetableEditorPage({
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="rounded-full border mt-2 border-orange-400/30 bg-orange-500/10 px-5 py-3 text-sm font-medium text-orange-100 transition  hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="theme-button-orange mt-2 px-5 py-3 font-medium disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? "Saving..." : "Save Timetable"}
             </button>
           </section>
 
-          <section className="overflow-hidden rounded-[30px] border border-white/10 bg-slate-950/60 shadow-soft">
+          <section className="theme-panel-muted overflow-hidden rounded-[30px] border shadow-soft">
             <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm text-slate-300">
-                <thead className="bg-white/5 text-xs uppercase tracking-[0.2em] text-slate-400">
+              <table className="theme-text min-w-full text-left text-sm">
+                <thead className="theme-surface text-xs uppercase tracking-[0.2em] theme-muted">
                   <tr>
                     <th className="px-4 py-4">Class</th>
                     <th className="px-4 py-4">Subject</th>
@@ -271,9 +271,9 @@ export default function TimetableEditorPage({
                   {rows.map((row, index) => (
                     <tr
                       key={`${row.classId}-${index}`}
-                      className="border-t border-white/5"
+                      className="border-t border-[color:var(--border-soft)]"
                     >
-                      <td className="px-4 py-4 align-top text-white">
+                      <td className="theme-heading px-4 py-4 align-top">
                         {row.classId}
                       </td>
                       <td className="px-4 py-4 align-top">
@@ -282,7 +282,7 @@ export default function TimetableEditorPage({
                           onChange={(event) =>
                             updateRow(index, "subject", event.target.value)
                           }
-                          className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none transition focus:border-orange-300"
+                          className="theme-input w-full rounded-xl border px-3 py-2 outline-none transition focus:border-orange-300"
                         >
                           {[
                             ...(subjectMap.get(row.classId) ||
@@ -304,7 +304,7 @@ export default function TimetableEditorPage({
                           onChange={(event) =>
                             updateRow(index, "startTime", event.target.value)
                           }
-                          className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none transition focus:border-orange-300"
+                          className="theme-input w-full rounded-xl border px-3 py-2 outline-none transition focus:border-orange-300"
                         />
                       </td>
                       <td className="px-4 py-4 align-top">
@@ -314,7 +314,7 @@ export default function TimetableEditorPage({
                           onChange={(event) =>
                             updateRow(index, "endTime", event.target.value)
                           }
-                          className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none transition focus:border-orange-300"
+                          className="theme-input w-full rounded-xl border px-3 py-2 outline-none transition focus:border-orange-300"
                         />
                       </td>
                       <td className="px-4 py-4 align-top">
@@ -323,7 +323,7 @@ export default function TimetableEditorPage({
                           onChange={(event) =>
                             updateRow(index, "roomId", event.target.value)
                           }
-                          className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none transition focus:border-orange-300"
+                          className="theme-input w-full rounded-xl border px-3 py-2 outline-none transition focus:border-orange-300"
                         >
                           {roomOptions.map((option) => (
                             <option key={option.roomId} value={option.roomId}>

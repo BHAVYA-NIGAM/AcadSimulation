@@ -21,12 +21,12 @@ export default function FileUpload({
   }
 
   return (
-    <div className="rounded-[28px] border border-white/10 bg-slate-950/60 p-5 shadow-soft">
+    <div className="theme-panel-muted rounded-[28px] border p-5 shadow-soft">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">Workbook Upload</h2>
-          <p className="mt-1 text-sm text-slate-400">
-            Accepted format: <span className="font-medium text-slate-200">.xlsx</span>
+          <h2 className="theme-heading text-lg font-semibold">Workbook Upload</h2>
+          <p className="theme-muted mt-1 text-sm">
+            Accepted format: <span className="theme-text font-medium">.xlsx</span>
           </p>
         </div>
         {isUploading ? (
@@ -43,13 +43,13 @@ export default function FileUpload({
         disabled={isUploading}
         className="group flex w-full flex-col items-center justify-center rounded-3xl border border-dashed border-orange-400/60 bg-gradient-to-br from-orange-500/10 to-sky-500/10 px-6 py-12 text-center transition hover:border-orange-300 hover:bg-orange-400/10 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <span className="mb-2 text-sm uppercase tracking-[0.25em] text-orange-300">
+        <span className="theme-kicker mb-2 text-sm uppercase tracking-[0.25em]">
           Upload Excel
         </span>
-        <span className="max-w-xs text-xl font-semibold text-white">
+        <span className="theme-heading max-w-xs text-xl font-semibold">
           Drop in the latest academic block workbook to regenerate the dashboard.
         </span>
-        <span className="mt-3 text-sm text-slate-400">
+        <span className="theme-muted mt-3 text-sm">
           {selectedName || "Choose a file to start the simulation"}
         </span>
       </button>
@@ -67,20 +67,20 @@ export default function FileUpload({
           <button
             type="button"
             onClick={onOpenTimetableEditor}
-            className="w-full rounded-2xl border border-sky-400/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-100 transition hover:bg-sky-500/20"
+            className="theme-button-sky w-full rounded-2xl px-4 py-3"
           >
             Open Full Timetable Editor
           </button>
         ) : null}
 
         {successMessage ? (
-          <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+          <div className="theme-alert-success rounded-2xl border px-4 py-3 text-sm">
             {successMessage}
           </div>
         ) : null}
 
         {error ? (
-          <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          <div className="theme-alert-error rounded-2xl border px-4 py-3 text-sm">
             {error}
           </div>
         ) : null}

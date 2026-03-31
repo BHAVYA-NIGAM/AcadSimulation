@@ -17,12 +17,12 @@ function CustomTooltip({ active, payload, label }) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/95 px-4 py-3 text-sm text-slate-100 shadow-soft">
-      <p className="font-semibold text-white">{label}</p>
+    <div className="theme-tooltip rounded-2xl border px-4 py-3 text-sm shadow-soft">
+      <p className="font-semibold">{label}</p>
       {payload.map((entry) => (
-        <p key={entry.dataKey} className="mt-1 text-slate-300">
+        <p key={entry.dataKey} className="theme-text mt-1">
           {entry.name}:{" "}
-          <span className="font-medium text-white">
+          <span className="theme-heading font-medium">
             {entry.dataKey === "avgOccupancy"
               ? `${Math.round(entry.value * 100)}%`
               : entry.value}
@@ -43,28 +43,31 @@ function getBarColor(status) {
   return "#38bdf8";
 }
 
-export default function Charts({ rooms, timeSeries }) {
+export default function Charts({ theme, rooms, timeSeries }) {
   const chartRooms = rooms.map((room) => ({
     ...room,
     roomLabel: room.roomNameEn || room.roomNameHi || "Room"
   }));
+  const axisColor = theme === "light" ? "#64748b" : "#94a3b8";
+  const gridColor =
+    theme === "light" ? "rgba(148, 163, 184, 0.2)" : "rgba(148, 163, 184, 0.15)";
 
   return (
     <div className="grid gap-6 xl:grid-cols-2">
-      <article className="rounded-[30px] border border-white/10 bg-slate-950/60 p-5 shadow-soft">
+      <article className="theme-panel-muted rounded-[30px] border p-5 shadow-soft">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-white">Room Occupancy Overview</h3>
-          <p className="mt-1 text-sm text-slate-400">
+          <h3 className="theme-heading text-lg font-semibold">Room Occupancy Overview</h3>
+          <p className="theme-muted mt-1 text-sm">
             Average occupancy per room, with overcrowded and underutilized spaces highlighted.
           </p>
         </div>
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartRooms} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-              <CartesianGrid stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
+              <CartesianGrid stroke={gridColor} vertical={false} />
               <XAxis
                 dataKey="roomLabel"
-                stroke="#94a3b8"
+                stroke={axisColor}
                 tickLine={false}
                 axisLine={false}
                 angle={-20}
@@ -72,7 +75,7 @@ export default function Charts({ rooms, timeSeries }) {
                 height={50}
               />
               <YAxis
-                stroke="#94a3b8"
+                stroke={axisColor}
                 tickFormatter={(value) => `${Math.round(value * 100)}%`}
                 tickLine={false}
                 axisLine={false}
@@ -88,19 +91,19 @@ export default function Charts({ rooms, timeSeries }) {
         </div>
       </article>
 
-      <article className="rounded-[30px] border border-white/10 bg-slate-950/60 p-5 shadow-soft">
+      <article className="theme-panel-muted rounded-[30px] border p-5 shadow-soft">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-white">Student Load Timeline</h3>
-          <p className="mt-1 text-sm text-slate-400">
+          <h3 className="theme-heading text-lg font-semibold">Student Load Timeline</h3>
+          <p className="theme-muted mt-1 text-sm">
             Concurrent student presence across time slots to reveal block pressure and peak hour.
           </p>
         </div>
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={timeSeries} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
-              <XAxis dataKey="time" stroke="#94a3b8" tickLine={false} axisLine={false} />
-              <YAxis stroke="#94a3b8" tickLine={false} axisLine={false} />
+              <CartesianGrid stroke={gridColor} vertical={false} />
+              <XAxis dataKey="time" stroke={axisColor} tickLine={false} axisLine={false} />
+              <YAxis stroke={axisColor} tickLine={false} axisLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Line
                 type="monotone"
