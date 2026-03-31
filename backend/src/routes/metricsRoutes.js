@@ -1,11 +1,14 @@
 import { Router } from "express";
 import multer from "multer";
 import {
+  applyOptimization,
   getHistory,
   getHistoryRecord,
   getMetrics,
+  getTimetableEditorTemplate,
   optimizeRooms,
   getPrediction,
+  saveTimetableDay,
   simulateBatchSize,
   uploadWorkbook
 } from "../controllers/metricsController.js";
@@ -24,5 +27,8 @@ router.get("/history/:recordId", getHistoryRecord);
 router.get("/predict", getPrediction);
 router.post("/simulate", simulateBatchSize);
 router.get("/optimize", optimizeRooms);
+router.post("/optimize/apply", applyOptimization);
+router.get("/timetable/template", getTimetableEditorTemplate);
+router.post("/timetable/save", saveTimetableDay);
 
 export default router;

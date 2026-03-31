@@ -31,6 +31,30 @@ export async function fetchPrediction(daysAhead) {
   return response.data;
 }
 
+export async function fetchOptimizations(recordId) {
+  const response = await api.get("/optimize", {
+    params: recordId ? { recordId } : {},
+  });
+  return response.data;
+}
+
+export async function applyOptimization(payload) {
+  const response = await api.post("/optimize/apply", payload);
+  return response.data;
+}
+
+export async function fetchTimetableTemplate(recordId) {
+  const response = await api.get("/timetable/template", {
+    params: recordId ? { recordId } : {},
+  });
+  return response.data;
+}
+
+export async function saveTimetableDay(payload) {
+  const response = await api.post("/timetable/save", payload);
+  return response.data;
+}
+
 export async function uploadWorkbook(file) {
   const formData = new FormData();
   formData.append("file", file);

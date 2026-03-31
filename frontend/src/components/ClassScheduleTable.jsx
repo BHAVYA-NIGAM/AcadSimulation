@@ -5,6 +5,9 @@ function statusClasses(status) {
   if (status === "underutilized") {
     return "border-amber-400/30 bg-amber-500/10 text-amber-100";
   }
+  if (status === "unassigned") {
+    return "border-slate-400/30 bg-slate-500/10 text-slate-100";
+  }
   return "border-sky-400/30 bg-sky-500/10 text-sky-100";
 }
 
@@ -37,7 +40,13 @@ function groupByFloor(classes) {
     );
 }
 
-export default function ClassScheduleTable({ classes }) {
+export default function ClassScheduleTable({
+  classes,
+  currentRecordId,
+  currentDate,
+  history,
+  onSelectRecord,
+}) {
   if (!classes?.length) {
     return (
       <article className="rounded-[30px] border border-white/10 bg-slate-950/60 p-6 shadow-soft">
@@ -53,11 +62,45 @@ export default function ClassScheduleTable({ classes }) {
 
   return (
     <article className="rounded-[30px] border border-white/10 bg-slate-950/60 p-6 shadow-soft">
-      <div className="mb-5">
-        <h3 className="text-lg font-semibold text-white">Lecture Timeline</h3>
-        <p className="mt-1 text-sm text-slate-400">
-          A cleaner daily schedule view with room names, program mix, and occupancy pressure.
-        </p>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold text-white">Lecture Timeline</h3>
+          <p className="mt-1 text-sm text-slate-400">
+            A cleaner daily schedule view with room names, program mix, and occupancy pressure.
+          </p>
+        </div>
+
+        <div className="min-w-[260px]">
+          <label
+            htmlFor="lecture-date-select"
+            className="text-sm text-slate-300"
+          >
+            Timetable date
+          </label>
+          <select
+            id="lecture-date-select"
+            value={currentRecordId || ""}
+            onChange={(event) => {
+              if (event.target.value) {
+                onSelectRecord(event.target.value);
+              }
+            }}
+            className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-orange-300"
+          >
+            <option value={currentRecordId || ""}>
+              {currentDate
+                ? new Date(`${currentDate}T00:00:00`).toLocaleDateString()
+                : "Current date"}
+            </option>
+            {(history || [])
+              .filter((record) => record.id !== currentRecordId)
+              .map((record) => (
+                <option key={record.id} value={record.id}>
+                  {`${new Date(`${record.dataDate}T00:00:00`).toLocaleDateString()} - ${record.originalName}`}
+                </option>
+              ))}
+          </select>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -73,7 +116,7 @@ export default function ClassScheduleTable({ classes }) {
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {group.items.map((classItem) => (
                 <div
-                  key={classItem.classId}
+                  key={`${classItem.classId}-${classItem.day}-${classItem.startTime}`}
                   className={`rounded-[22px] border p-4 ${statusClasses(classItem.status)}`}
                 >
                   <div className="flex items-start justify-between gap-3">

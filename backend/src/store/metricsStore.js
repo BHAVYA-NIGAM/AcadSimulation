@@ -1,14 +1,19 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  buildDatasetFromWorkbook,
+  buildMetricsFromDataset,
+} from "../services/excelService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dataDirectory = path.resolve(__dirname, "../../data");
 const uploadsDirectory = path.join(dataDirectory, "uploads");
 const recordsDirectory = path.join(dataDirectory, "records");
+const baseTemplatePath = path.resolve(__dirname, "../../../23_03_2026.xlsx");
 
-export async function saveStoredWorkbook({ originalName, buffer, metrics }) {
+export async function saveStoredWorkbook({ originalName, buffer, dataset, metrics }) {
   await ensureDirectories();
 
   const now = new Date();
@@ -20,25 +25,66 @@ export async function saveStoredWorkbook({ originalName, buffer, metrics }) {
 
   await fs.writeFile(workbookPath, buffer);
 
-  const record = {
+  const normalizedDataset = normalizeDataset(
+    dataset || (await buildDatasetFromWorkbook(buffer)),
+  );
+  const resolvedMetrics =
+    metrics || buildMetricsFromDataset(normalizedDataset);
+
+  const record = buildStoredRecord({
     id,
     originalName: originalName || "upload.xlsx",
     storedFileName: workbookFileName,
     uploadedAt: now.toISOString(),
     dataDate,
-    metrics: attachActualMeta(metrics, {
-      id,
-      originalName: originalName || "upload.xlsx",
-      uploadedAt: now.toISOString(),
-      dataDate
-    })
-  };
+    metrics: resolvedMetrics,
+    dataset: normalizedDataset,
+    source: "upload",
+  });
 
-  await fs.writeFile(
-    path.join(recordsDirectory, `${id}.json`),
-    JSON.stringify(record, null, 2),
-    "utf8"
-  );
+  await writeRecord(record);
+
+  return record.metrics;
+}
+
+export async function saveTimetableRecord({
+  dataDate,
+  timetable,
+  basedOnRecordId = null,
+  targetRecordId = null,
+}) {
+  await ensureDirectories();
+
+  const baseDataset = basedOnRecordId
+    ? await getDatasetForRecord(basedOnRecordId)
+    : await getBaseTemplateDataset();
+  const normalizedDataDate = normalizeInputDate(dataDate);
+  const existingRecord =
+    (targetRecordId ? await getRecordById(targetRecordId) : null) ||
+    (await findRecordByDate(normalizedDataDate));
+  const dataset = normalizeDataset({
+    rooms: baseDataset.rooms,
+    enrollments: baseDataset.enrollments,
+    timetable,
+  });
+  const metrics = buildMetricsFromDataset(dataset);
+  const now = new Date();
+  const id = existingRecord?.id || `record-${now.getTime()}`;
+  const originalName =
+    existingRecord?.originalName || formatWorkbookNameFromIsoDate(normalizedDataDate);
+
+  const record = buildStoredRecord({
+    id,
+    originalName,
+    storedFileName: existingRecord?.storedFileName || null,
+    uploadedAt: now.toISOString(),
+    dataDate: normalizedDataDate,
+    metrics,
+    dataset,
+    source: existingRecord?.source || "timetable-editor",
+  });
+
+  await writeRecord(record);
 
   return record.metrics;
 }
@@ -55,9 +101,9 @@ export async function listStoredHistory() {
     originalName: record.originalName,
     uploadedAt: record.uploadedAt,
     dataDate: normalizeRecordDate(record),
-    source: "upload",
+    source: record.source || "upload",
     weekday: getWeekday(normalizeRecordDate(record)),
-    summary: record.metrics.summary
+    summary: record.metrics.summary,
   }));
 }
 
@@ -65,6 +111,82 @@ export async function getStoredRecord(recordId) {
   const records = await readAllRecords();
   const record = records.find((entry) => entry.id === recordId);
   return record?.metrics || null;
+}
+
+export async function getTimetableTemplate(recordId = null) {
+  const baseDataset = recordId
+    ? await getDatasetForRecord(recordId)
+    : await getBaseTemplateDataset();
+
+  return {
+    sourceRecordId: recordId,
+    templateDate: recordId ? null : "2026-03-23",
+    rooms: baseDataset.rooms.map((room) => ({
+      roomId: room.roomId,
+      roomNameEn: room.roomNameEn,
+      roomNameHi: room.roomNameHi,
+      floor: room.floor,
+      type: room.type,
+      capacity: room.capacity,
+    })),
+    timetable: baseDataset.timetable.map((entry) => ({
+      classId: entry.classId,
+      subject: entry.subject,
+      roomId: entry.roomId,
+      startTime: entry.startTime,
+      endTime: entry.endTime,
+      day: entry.day,
+    })),
+  };
+}
+
+export async function applyOptimizationToRecord({
+  recordId,
+  classId,
+  day = null,
+  startTime = null,
+  toRoom,
+}) {
+  const sourceRecord = recordId
+    ? await getRecordById(recordId)
+    : (await readAllRecords())[0] || null;
+
+  if (!sourceRecord) {
+    const error = new Error("No source timetable record found to apply optimization.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const dataset = await hydrateDatasetFromRecord(sourceRecord);
+  const roomExists = dataset.rooms.some((room) => room.roomId === toRoom);
+  if (!roomExists) {
+    const error = new Error(`Target room ${toRoom} does not exist in the stored room inventory.`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const entryIndex = dataset.timetable.findIndex(
+    (entry) =>
+      entry.classId === classId &&
+      (day ? entry.day === day : true) &&
+      (startTime ? entry.startTime === startTime : true),
+  );
+  if (entryIndex < 0) {
+    const error = new Error(`Class ${classId} was not found in the stored timetable.`);
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const updatedTimetable = dataset.timetable.map((entry, index) =>
+    index === entryIndex ? { ...entry, roomId: toRoom } : entry,
+  );
+
+  return saveTimetableRecord({
+    dataDate: normalizeRecordDate(sourceRecord),
+    timetable: updatedTimetable,
+    basedOnRecordId: sourceRecord.id,
+    targetRecordId: sourceRecord.id,
+  });
 }
 
 export async function buildPrediction(daysAhead) {
@@ -79,7 +201,7 @@ export async function buildPrediction(daysAhead) {
   const targetWeekday = getWeekday(targetDateIso);
 
   const sameWeekdayRecords = records.filter(
-    (record) => getWeekday(normalizeRecordDate(record)) === targetWeekday
+    (record) => getWeekday(normalizeRecordDate(record)) === targetWeekday,
   );
   const fallbackRecords = records.slice(0, Math.min(records.length, 5));
   const sourceRecords = sameWeekdayRecords.length > 0 ? sameWeekdayRecords : fallbackRecords;
@@ -92,7 +214,7 @@ export async function buildPrediction(daysAhead) {
     daysAhead,
     predictionStrategy,
     basedOnRecordCount: sourceRecords.length,
-    basedOnRecordIds: sourceRecords.map((record) => record.id)
+    basedOnRecordIds: sourceRecords.map((record) => record.id),
   });
 }
 
@@ -101,23 +223,29 @@ async function ensureDirectories() {
   await fs.mkdir(recordsDirectory, { recursive: true });
 }
 
+async function writeRecord(record) {
+  await fs.writeFile(
+    path.join(recordsDirectory, `${record.id}.json`),
+    JSON.stringify(record, null, 2),
+    "utf8",
+  );
+}
+
 async function readAllRecords() {
   await ensureDirectories();
 
   const records = await readSavedUploadRecords();
 
-  return records.sort(
-    (left, right) => {
-      const dateDiff =
-        new Date(normalizeRecordDate(right)).getTime() -
-        new Date(normalizeRecordDate(left)).getTime();
-      if (dateDiff !== 0) {
-        return dateDiff;
-      }
-
-      return new Date(right.uploadedAt).getTime() - new Date(left.uploadedAt).getTime();
+  return records.sort((left, right) => {
+    const dateDiff =
+      new Date(normalizeRecordDate(right)).getTime() -
+      new Date(normalizeRecordDate(left)).getTime();
+    if (dateDiff !== 0) {
+      return dateDiff;
     }
-  );
+
+    return new Date(right.uploadedAt).getTime() - new Date(left.uploadedAt).getTime();
+  });
 }
 
 async function readSavedUploadRecords() {
@@ -128,8 +256,154 @@ async function readSavedUploadRecords() {
     jsonFiles.map(async (fileName) => {
       const contents = await fs.readFile(path.join(recordsDirectory, fileName), "utf8");
       return JSON.parse(contents);
-    })
+    }),
   );
+}
+
+async function getRecordById(recordId) {
+  const records = await readAllRecords();
+  return records.find((record) => record.id === recordId) || null;
+}
+
+async function findRecordByDate(dataDate) {
+  const records = await readAllRecords();
+  return records.find((record) => normalizeRecordDate(record) === dataDate) || null;
+}
+
+async function getDatasetForRecord(recordId) {
+  const record = await getRecordById(recordId);
+  if (!record) {
+    const error = new Error("Requested template record was not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return hydrateDatasetFromRecord(record);
+}
+
+async function getBaseTemplateDataset() {
+  try {
+    const workbookBuffer = await fs.readFile(baseTemplatePath);
+    return normalizeDataset(await buildDatasetFromWorkbook(workbookBuffer));
+  } catch (_error) {
+    const latestRecord = (await readAllRecords())[0] || null;
+    if (latestRecord) {
+      return hydrateDatasetFromRecord(latestRecord);
+    }
+
+    const error = new Error("No base template workbook is available for timetable editing.");
+    error.statusCode = 404;
+    throw error;
+  }
+}
+
+async function hydrateDatasetFromRecord(record) {
+  if (record.dataset) {
+    return normalizeDataset(record.dataset);
+  }
+
+  const metrics = record.metrics || {};
+  const rooms = (metrics.rooms || []).map((room) => ({
+    roomId: room.roomId,
+    roomNameEn: room.roomNameEn || "",
+    roomNameHi: room.roomNameHi || "",
+    capacity: room.capacity || 0,
+    type: room.type || "",
+    floor: room.floor || "",
+  }));
+
+  const timetable = (metrics.classes || []).map((classItem) => ({
+    classId: classItem.classId,
+    subject: classItem.subject,
+    roomId: classItem.roomId,
+    startTime: classItem.startTime,
+    endTime: classItem.endTime,
+    day: classItem.day,
+  }));
+
+  const enrollments = dedupeByKey(
+    (metrics.classes || []).map((classItem) => ({
+      classId: classItem.classId,
+      studentCount: classItem.studentCount,
+    })),
+    "classId",
+  );
+
+  return normalizeDataset({ rooms, timetable, enrollments });
+}
+
+function buildStoredRecord({
+  id,
+  originalName,
+  storedFileName,
+  uploadedAt,
+  dataDate,
+  metrics,
+  dataset,
+  source,
+}) {
+  return {
+    id,
+    originalName,
+    storedFileName,
+    uploadedAt,
+    dataDate,
+    source,
+    dataset,
+    metrics: attachActualMeta(metrics, {
+      id,
+      originalName,
+      uploadedAt,
+      dataDate,
+      source,
+    }),
+  };
+}
+
+function normalizeDataset(dataset) {
+  return {
+    rooms: (dataset.rooms || []).map((room) => ({
+      roomId: String(room.roomId || "").trim(),
+      roomNameEn: String(room.roomNameEn || "").trim(),
+      roomNameHi: String(room.roomNameHi || "").trim(),
+      capacity: Number(room.capacity) || 0,
+      type: String(room.type || "").trim(),
+      floor: String(room.floor || "").trim(),
+    })),
+    timetable: (dataset.timetable || []).map((entry) => ({
+      classId: String(entry.classId || "").trim(),
+      subject: String(entry.subject || "").trim(),
+      roomId: String(entry.roomId || "").trim(),
+      startTime: normalizeTime(entry.startTime),
+      endTime: normalizeTime(entry.endTime),
+      day: String(entry.day || "").trim(),
+    })),
+    enrollments: dedupeByKey(
+      (dataset.enrollments || []).map((entry) => ({
+        classId: String(entry.classId || "").trim(),
+        studentCount: Number(entry.studentCount) || 0,
+      })),
+      "classId",
+    ),
+  };
+}
+
+function normalizeTime(value) {
+  const normalized = String(value || "").trim();
+  if (!normalized) {
+    return "";
+  }
+
+  const [hours, minutes] = normalized.split(":").map(Number);
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function dedupeByKey(items, key) {
+  const seen = new Map();
+  for (const item of items) {
+    seen.set(item[key], item);
+  }
+  return [...seen.values()];
 }
 
 function computePredictedMetrics(records) {
@@ -151,7 +425,7 @@ function computePredictedMetrics(records) {
         roomNamesEn: [],
         roomNamesHi: [],
         floors: [],
-        types: []
+        types: [],
       };
 
       entry.capacityTotal += room.capacity || 0;
@@ -180,7 +454,7 @@ function computePredictedMetrics(records) {
       const entry = timeSeriesMap.get(point.time) || {
         time: point.time,
         studentsTotal: 0,
-        count: 0
+        count: 0,
       };
       entry.studentsTotal += point.students || 0;
       entry.count += 1;
@@ -211,7 +485,7 @@ function computePredictedMetrics(records) {
         avgOccupancy,
         utilization,
         status,
-        recommendation: mostCommon(entry.recommendations)
+        recommendation: mostCommon(entry.recommendations),
       };
     })
     .sort((left, right) => left.roomId.localeCompare(right.roomId));
@@ -219,7 +493,7 @@ function computePredictedMetrics(records) {
   const timeSeries = [...timeSeriesMap.values()]
     .map((entry) => ({
       time: entry.time,
-      students: Math.round(entry.studentsTotal / Math.max(entry.count, 1))
+      students: Math.round(entry.studentsTotal / Math.max(entry.count, 1)),
     }))
     .sort((left, right) => toMinutes(left.time) - toMinutes(right.time));
 
@@ -232,9 +506,7 @@ function computePredictedMetrics(records) {
     Math.max(metricsList.length, 1);
 
   const peakHour = mostCommon(
-    metricsList
-      .map((metrics) => metrics.summary?.peakHour)
-      .filter(Boolean)
+    metricsList.map((metrics) => metrics.summary?.peakHour).filter(Boolean),
   );
 
   const classes = latestClasses.map((classItem) => {
@@ -259,7 +531,7 @@ function computePredictedMetrics(records) {
       capacity,
       studentCount,
       occupancy: round(occupancy),
-      status
+      status,
     };
   });
 
@@ -267,11 +539,11 @@ function computePredictedMetrics(records) {
     summary: {
       totalRooms: Math.round(totalRooms),
       avgOccupancy: round(avgOccupancy),
-      peakHour: peakHour || "N/A"
+      peakHour: peakHour || "N/A",
     },
     rooms,
     timeSeries,
-    classes
+    classes,
   };
 }
 
@@ -285,9 +557,9 @@ function attachActualMeta(metrics, { id, originalName, uploadedAt, dataDate, sou
       uploadedAt,
       dataDate,
       source,
-      label: "Uploaded Workbook",
-      weekday: getWeekday(dataDate)
-    }
+      label: source === "timetable-editor" ? "Timetable Editor Save" : "Uploaded Workbook",
+      weekday: getWeekday(dataDate),
+    },
   };
 }
 
@@ -298,8 +570,8 @@ function attachPredictionMeta(metrics, metadata) {
       recordType: "predicted",
       label: "Predicted Metrics",
       generatedAt: new Date().toISOString(),
-      ...metadata
-    }
+      ...metadata,
+    },
   };
 }
 
@@ -336,12 +608,30 @@ function parseDataDateFromFileName(fileName) {
   return isoDate;
 }
 
+function normalizeInputDate(value) {
+  const normalized = toDateOnlyIso(value);
+  if (!normalized) {
+    const error = new Error("A valid timetable date is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+  return normalized;
+}
+
+function formatWorkbookNameFromIsoDate(isoDate) {
+  const [year, month, day] = isoDate.split("-");
+  return `${day}_${month}_${year}.xlsx`;
+}
+
 function normalizeRecordDate(record) {
   return record.dataDate || record.metrics?.meta?.dataDate || toDateOnlyIso(record.uploadedAt);
 }
 
 function toDateOnlyIso(dateValue) {
   const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
   return date.toISOString().slice(0, 10);
 }
 

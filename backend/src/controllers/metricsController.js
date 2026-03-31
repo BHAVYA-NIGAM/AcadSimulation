@@ -1,13 +1,19 @@
-import { buildMetricsFromWorkbook } from "../services/excelService.js";
+import {
+  buildDatasetFromWorkbook,
+  buildMetricsFromDataset,
+} from "../services/excelService.js";
 import {
   optimizeRoomAllocation,
   runBatchSizeSimulation
 } from "../services/simulationService.js";
 import {
+  applyOptimizationToRecord,
   buildPrediction,
+  getTimetableTemplate,
   getStoredMetrics,
   getStoredRecord,
   listStoredHistory,
+  saveTimetableRecord,
   saveStoredWorkbook
 } from "../store/metricsStore.js";
 
@@ -24,11 +30,13 @@ export async function uploadWorkbook(req, res, next) {
       });
     }
 
-    const metrics = await buildMetricsFromWorkbook(req.file.buffer);
+    const dataset = await buildDatasetFromWorkbook(req.file.buffer);
+    const metrics = buildMetricsFromDataset(dataset);
     const storedMetrics = await saveStoredWorkbook({
       originalName: req.file.originalname,
       buffer: req.file.buffer,
-      metrics
+      dataset,
+      metrics,
     });
 
     return res.status(200).json({
@@ -124,7 +132,9 @@ export async function simulateBatchSize(req, res, next) {
 
 export async function optimizeRooms(_req, res, next) {
   try {
-    const metrics = await getStoredMetrics();
+    const metrics = _req.query.recordId
+      ? await getStoredRecord(_req.query.recordId)
+      : await getStoredMetrics();
     if (!metrics) {
       return res.status(404).json({
         message: "No metrics available. Upload an Excel file first."
@@ -133,6 +143,52 @@ export async function optimizeRooms(_req, res, next) {
 
     const optimization = optimizeRoomAllocation(metrics);
     return res.status(200).json(optimization);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getTimetableEditorTemplate(req, res, next) {
+  try {
+    const template = await getTimetableTemplate(req.query.recordId || null);
+    return res.status(200).json(template);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function saveTimetableDay(req, res, next) {
+  try {
+    const metrics = await saveTimetableRecord({
+      dataDate: req.body?.dataDate,
+      timetable: req.body?.timetable || [],
+      basedOnRecordId: req.body?.basedOnRecordId || null,
+      targetRecordId: req.body?.targetRecordId || null,
+    });
+
+    return res.status(200).json({
+      message: "Timetable saved successfully.",
+      metrics,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function applyOptimization(req, res, next) {
+  try {
+    const metrics = await applyOptimizationToRecord({
+      recordId: req.body?.recordId || null,
+      classId: req.body?.classId,
+      day: req.body?.day || null,
+      startTime: req.body?.startTime || null,
+      toRoom: req.body?.toRoom,
+    });
+
+    return res.status(200).json({
+      message: "Optimization applied successfully.",
+      metrics,
+    });
   } catch (error) {
     return next(error);
   }

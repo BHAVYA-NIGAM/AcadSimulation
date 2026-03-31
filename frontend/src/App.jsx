@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Dashboard from "./components/Dashboard.jsx";
+import TimetableEditorPage from "./components/TimetableEditorPage.jsx";
 import UploadLanding from "./components/UploadLanding.jsx";
 import {
   fetchHistory,
@@ -8,6 +9,13 @@ import {
   uploadWorkbook
 } from "./services/api.js";
 
+function pageFromPath(pathname) {
+  if (pathname === "/timetable-editor") {
+    return "timetable-editor";
+  }
+  return pathname === "/dashboard" ? "dashboard" : "upload";
+}
+
 export default function App() {
   const [metrics, setMetrics] = useState(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -15,12 +23,39 @@ export default function App() {
   const [isLoadingHistoryRecord, setIsLoadingHistoryRecord] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [currentPage, setCurrentPage] = useState("upload");
+  const [currentPage, setCurrentPage] = useState(() =>
+    pageFromPath(window.location.pathname)
+  );
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  useEffect(() => {
+    function handlePopState() {
+      setCurrentPage(pageFromPath(window.location.pathname));
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  function navigateTo(page, options = {}) {
+    const targetPath =
+      page === "dashboard"
+        ? "/dashboard"
+        : page === "timetable-editor"
+          ? "/timetable-editor"
+          : "/";
+    const historyMethod = options.replace ? "replaceState" : "pushState";
+
+    if (window.location.pathname !== targetPath) {
+      window.history[historyMethod]({}, "", targetPath);
+    }
+
+    setCurrentPage(page);
+  }
 
   async function loadInitialData() {
     await Promise.all([loadMetrics(), loadHistory()]);
@@ -31,15 +66,26 @@ export default function App() {
       setError("");
       const response = await fetchMetrics();
       setMetrics(response);
-      setCurrentPage("dashboard");
+
+      if (window.location.pathname === "/dashboard") {
+        setCurrentPage("dashboard");
+      }
     } catch (requestError) {
       if (requestError.response?.status === 404) {
-        setCurrentPage("upload");
+        if (window.location.pathname === "/dashboard") {
+          navigateTo("upload", { replace: true });
+        } else {
+          setCurrentPage(pageFromPath(window.location.pathname));
+        }
       } else {
         const message =
           requestError.response?.data?.message || "Unable to load dashboard metrics.";
         setError(message);
-        setCurrentPage("upload");
+        if (window.location.pathname === "/dashboard") {
+          navigateTo("upload", { replace: true });
+        } else {
+          setCurrentPage(pageFromPath(window.location.pathname));
+        }
       }
     } finally {
       setIsInitialLoading(false);
@@ -65,7 +111,7 @@ export default function App() {
       setMetrics(response.metrics);
       await loadHistory();
       setSuccessMessage("Dashboard refreshed successfully from the uploaded workbook.");
-      setCurrentPage("dashboard");
+      navigateTo("dashboard");
     } catch (uploadError) {
       const message =
         uploadError.response?.data?.message || "Upload failed. Please try again.";
@@ -76,7 +122,7 @@ export default function App() {
   }
 
   function handleResetToUpload() {
-    setCurrentPage("upload");
+    navigateTo("upload");
     setError("");
     setSuccessMessage("");
   }
@@ -88,7 +134,7 @@ export default function App() {
     try {
       const recordMetrics = await fetchHistoryRecord(recordId);
       setMetrics(recordMetrics);
-      setCurrentPage("dashboard");
+      navigateTo("dashboard");
       setSuccessMessage("Historical workbook loaded successfully.");
     } catch (historyError) {
       setError(
@@ -101,8 +147,19 @@ export default function App() {
 
   function handleOpenDashboard() {
     if (metrics) {
-      setCurrentPage("dashboard");
+      navigateTo("dashboard");
     }
+  }
+
+  function handleOpenTimetableEditor() {
+    navigateTo("timetable-editor");
+  }
+
+  async function handleMetricsSaved(nextMetrics, message) {
+    setMetrics(nextMetrics);
+    await loadHistory();
+    setSuccessMessage(message);
+    navigateTo("dashboard");
   }
 
   return (
@@ -118,19 +175,33 @@ export default function App() {
             hasMetrics={Boolean(metrics)}
             history={history}
             onOpenDashboard={handleOpenDashboard}
+            onOpenTimetableEditor={handleOpenTimetableEditor}
             onSelectRecord={handleLoadHistoryRecord}
           />
-        ) : (
+        ) : null}
+
+        {currentPage === "dashboard" ? (
           <Dashboard
             metrics={metrics}
             isLoading={isInitialLoading}
             isRefreshing={isUploading || isLoadingHistoryRecord}
             statusMessage={successMessage}
             onReset={handleResetToUpload}
+            onApplyOptimization={handleMetricsSaved}
+            onOpenTimetableEditor={handleOpenTimetableEditor}
             history={history}
             onSelectRecord={handleLoadHistoryRecord}
           />
-        )}
+        ) : null}
+
+        {currentPage === "timetable-editor" ? (
+          <TimetableEditorPage
+            sourceRecordId={metrics?.meta?.recordId || null}
+            onBack={handleResetToUpload}
+            onSaved={handleMetricsSaved}
+            onOpenDashboard={handleOpenDashboard}
+          />
+        ) : null}
       </div>
     </main>
   );

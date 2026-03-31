@@ -18,6 +18,7 @@ export default function UploadLanding({
   hasMetrics,
   history,
   onOpenDashboard,
+  onOpenTimetableEditor,
   onSelectRecord
 }) {
   if (isLoading) {
@@ -67,6 +68,13 @@ export default function UploadLanding({
                 Open Current Dashboard
               </button>
             ) : null}
+            <button
+              type="button"
+              onClick={onOpenTimetableEditor}
+              className="rounded-full border border-orange-400/30 bg-orange-500/10 px-5 py-3 text-sm font-medium text-orange-100 transition hover:bg-orange-500/20"
+            >
+              Open Timetable Editor
+            </button>
           </div>
 
           {history?.length ? (
@@ -107,6 +115,7 @@ export default function UploadLanding({
         <FileUpload
           isUploading={isUploading}
           onUpload={onUpload}
+          onOpenTimetableEditor={onOpenTimetableEditor}
           error={error}
           successMessage={successMessage}
         />

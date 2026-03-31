@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Charts from "./Charts.jsx";
 import ClassScheduleTable from "./ClassScheduleTable.jsx";
+import OptimizeTimetablePanel from "./OptimizeTimetablePanel.jsx";
 import RoomAvailabilityPanel from "./RoomAvailabilityPanel.jsx";
 import RoomTable from "./RoomTable.jsx";
 
@@ -232,9 +233,14 @@ export default function Dashboard({
   isRefreshing,
   statusMessage,
   onReset,
+  onApplyOptimization,
+  onOpenTimetableEditor,
   history,
   onSelectRecord,
 }) {
+  const insights = useMemo(() => buildInsights(metrics || {}), [metrics]);
+  const [activeView, setActiveView] = useState("overview");
+
   if (isLoading) {
     return (
       <LoadingState message="Loading the latest academic block metrics..." />
@@ -247,13 +253,11 @@ export default function Dashboard({
     );
   }
 
-  const insights = useMemo(() => buildInsights(metrics), [metrics]);
-  const [activeView, setActiveView] = useState("overview");
-
   const views = [
     { id: "overview", label: "Overview" },
     { id: "timetable", label: "Timetable" },
     { id: "availability", label: "Availability" },
+    { id: "optimize", label: "Optimize Timetable" },
     { id: "rooms", label: "Rooms" },
   ];
 
@@ -358,11 +362,25 @@ export default function Dashboard({
       ) : null}
 
       {activeView === "timetable" ? (
-        <ClassScheduleTable classes={metrics.classes} />
+        <ClassScheduleTable
+          classes={metrics.classes}
+          currentRecordId={metrics.meta?.recordId}
+          currentDate={metrics.meta?.dataDate}
+          history={history}
+          onSelectRecord={onSelectRecord}
+        />
       ) : null}
 
       {activeView === "availability" ? (
         <RoomAvailabilityPanel rooms={metrics.rooms} classes={metrics.classes} />
+      ) : null}
+
+      {activeView === "optimize" ? (
+        <OptimizeTimetablePanel
+          metrics={metrics}
+          onApplied={onApplyOptimization}
+          onOpenEditor={onOpenTimetableEditor}
+        />
       ) : null}
 
       {activeView === "rooms" ? <RoomTable rooms={metrics.rooms} /> : null}

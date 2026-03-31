@@ -1,6 +1,12 @@
 import { useRef, useState } from "react";
 
-export default function FileUpload({ isUploading, onUpload, error, successMessage }) {
+export default function FileUpload({
+  isUploading,
+  onUpload,
+  onOpenTimetableEditor,
+  error,
+  successMessage,
+}) {
   const inputRef = useRef(null);
   const [selectedName, setSelectedName] = useState("");
 
@@ -57,6 +63,16 @@ export default function FileUpload({ isUploading, onUpload, error, successMessag
       />
 
       <div className="mt-4 min-h-12 space-y-2">
+        {onOpenTimetableEditor ? (
+          <button
+            type="button"
+            onClick={onOpenTimetableEditor}
+            className="w-full rounded-2xl border border-sky-400/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-100 transition hover:bg-sky-500/20"
+          >
+            Open Full Timetable Editor
+          </button>
+        ) : null}
+
         {successMessage ? (
           <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
             {successMessage}

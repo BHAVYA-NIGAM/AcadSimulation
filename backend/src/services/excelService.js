@@ -22,7 +22,7 @@ const MBA_SUBJECTS = new Set([
 ]);
 const UNASSIGNED_ROOM_ID = "TBA";
 
-export async function buildMetricsFromWorkbook(fileBuffer) {
+export async function buildDatasetFromWorkbook(fileBuffer) {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(fileBuffer);
 
@@ -34,6 +34,15 @@ export async function buildMetricsFromWorkbook(fileBuffer) {
   const timetable = parseTimetableSheet(timetableSheet);
   const enrollments = parseEnrollmentSheet(enrollmentSheet);
 
+  return { rooms, timetable, enrollments };
+}
+
+export async function buildMetricsFromWorkbook(fileBuffer) {
+  const dataset = await buildDatasetFromWorkbook(fileBuffer);
+  return buildMetricsFromDataset(dataset);
+}
+
+export function buildMetricsFromDataset({ rooms, timetable, enrollments }) {
   return computeMetrics({ rooms, timetable, enrollments });
 }
 
